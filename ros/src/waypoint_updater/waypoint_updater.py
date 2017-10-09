@@ -19,12 +19,15 @@ current status in `/vehicle/traffic_lights` message. You can use this message to
 as well as to verify your TL classifier.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish.
+LOOKAHEAD_WPS = 20 # Number of waypoints we will publish.
 
 
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
+
+        # A list of all waypoints
+        self.all_waypoints = []
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -35,27 +38,34 @@ class WaypointUpdater(object):
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
-        # A list of all waypoints
-        self.all_waypoints = []
+        # Create waypoints Lane for publishing
+        lane = Lane()
+        lane.header.frame_id = '/world'
 
-        #Rate(10)
+        # Start loop, 10 times a second
+        rate = rospy.Rate(10)
+        while not rospy.is_shutdown():
+            
+            # Publish waypoints
+            if len(self.all_waypoints) > LOOKAHEAD_WPS:
+                # Publish the first LOOKAHEAD_WPS waypoints
+                waypoints = self.all_waypoints[0:LOOKAHEAD_WPS]
+                lane.header.stamp = rospy.Time.now()
+                lane.waypoints = waypoints
+                self.final_waypoints_pub.publish(lane)
 
-        if len(self.waypoints) > 0:
-#            self.final_waypoints_pub.publish(waypoints) LOOKAHEAD_WPS
-            pass
+            # Sleep
+            rate.sleep()
 
-        rospy.spin()
 
     def pose_cb(self, msg):
         # TODO: Implement
         pass
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
 
-        self.all_waypoints = waypoints
-
-        pass
+        # Save given waypoints
+        self.all_waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message.
