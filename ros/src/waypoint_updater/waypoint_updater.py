@@ -35,6 +35,15 @@ class WaypointUpdater(object):
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
+        # A list of all waypoints
+        self.all_waypoints = []
+
+        #Rate(10)
+
+        if len(self.waypoints) > 0:
+#            self.final_waypoints_pub.publish(waypoints) LOOKAHEAD_WPS
+            pass
+
         rospy.spin()
 
     def pose_cb(self, msg):
@@ -43,6 +52,9 @@ class WaypointUpdater(object):
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
+
+        self.all_waypoints = waypoints
+
         pass
 
     def traffic_cb(self, msg):
