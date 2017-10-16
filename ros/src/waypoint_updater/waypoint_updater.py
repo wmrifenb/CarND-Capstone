@@ -64,16 +64,15 @@ class WaypointUpdater(object):
                         closest_waypoint = i
 
                 # Log
-                rospy.loginfo("Closest waypoint: " + str(closest_waypoint) + " of " + str(len(waypoints)) + " at distance: " + str(closest_distance) + "Waypoint:\n" + str(waypoints[closest_waypoint]) )
+                rospy.loginfo("Closest waypoint: " + str(closest_waypoint) + " of " + str(len(waypoints)) + " at distance: " + str(closest_distance) + "\nThe waypoint:\n" + str(waypoints[closest_waypoint]) )
+
+                # Cut this f b up
+                waypoints = waypoints[closest_waypoint:closest_waypoint+10]
 
                 # Set velocity
-                for i in range(10):
-                    self.set_waypoint_velocity(waypoints, i, 1)
-                    rospy.loginfo("Waypoint:\n" + str(waypoints[i]) + "\nPosition: " + str(self.current_pose))
-
-                # Calculate distance
-                distance = self.distance(waypoints, 0, 1)
-                rospy.loginfo("Waypoint distance: " + str(distance))
+                for i in range(0, 10):
+                    self.set_waypoint_velocity(waypoints, i, 10)
+                    rospy.loginfo("Waypoint:\n" + str(waypoints[i]) + "\nOur position:\n" + str(self.current_pose))
 
                 # Publish waypoints
                 lane.header.stamp = rospy.Time.now()
