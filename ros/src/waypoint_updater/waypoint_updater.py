@@ -67,10 +67,10 @@ class WaypointUpdater(object):
                 rospy.loginfo("Closest waypoint: " + str(closest_waypoint) + " of " + str(len(waypoints)) + " at distance: " + str(closest_distance) + "\nThe waypoint:\n" + str(waypoints[closest_waypoint]) )
 
                 # Cut this f b up
-                waypoints = waypoints[closest_waypoint:closest_waypoint+10]
+                waypoints = waypoints[closest_waypoint:closest_waypoint+50]
 
                 # Set velocity
-                for i in range(0, 10):
+                for i in range(0, 50):
                     self.set_waypoint_velocity(waypoints, i, 10)
                     rospy.loginfo("Waypoint:\n" + str(waypoints[i]) + "\nOur position:\n" + str(self.current_pose))
 

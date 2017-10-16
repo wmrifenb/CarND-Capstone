@@ -48,7 +48,8 @@ class DBWNode(object):
 
         # Init
         self.current_velocity = 0
-        self.dbw_enabled = True
+        self.dbw_enabled = False
+        self.twist_cmd = None
 
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd', SteeringCmd, queue_size=1)
         self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd', ThrottleCmd, queue_size=1)
@@ -60,25 +61,41 @@ class DBWNode(object):
         # Subscribe to twist_cmd messages
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_callback)
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_callback)
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_callback)
+
 
         self.loop()
 
     def twist_callback(self, twist_cmd):
 
+        rospy.loginfo("twisty " + str(twist_cmd))
+
         # Save
         self.twist_cmd = twist_cmd
 
-    def current_velocity(self, current_velocity):
+    def dbw_enabled_callback(self, dbw_enabled):
+
+        # Save
+        self.dbw_enabled = dbw_enabled.data
+
+    def current_velocity_callback(self, current_velocity):
 
         # Save
         self.current_velocity = current_velocity
 
     def loop(self):
-        rate = rospy.Rate(50) # 50Hz
+        rate = rospy.Rate(5) # 5Hz
         while not rospy.is_shutdown():
 
+            # Get planned velocities
+            linear_velocity = 0
+            angular_velocity = 0
+            if self.twist_cmd is not None:
+                linear_velocity = self.twist_cmd.twist.linear.x
+                angular_velocity = self.twist_cmd.twist.angular.z
+
             # Get predicted throttle, brake, and steering
-            throttle, brake, steering = self.controller.control(1, 0, self.current_velocity, self.dbw_enabled)
+            throttle, brake, steering = self.controller.control(linear_velocity, angular_velocity, self.current_velocity, self.dbw_enabled)
 
             # Publish to drive
             if self.dbw_enabled:
