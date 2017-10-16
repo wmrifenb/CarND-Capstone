@@ -28,6 +28,7 @@ class WaypointUpdater(object):
 
         # A list of all waypoints
         self.all_waypoints = []
+        self.current_pose = None
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -47,9 +48,34 @@ class WaypointUpdater(object):
         while not rospy.is_shutdown():
             
             # Publish waypoints
-            if len(self.all_waypoints) > LOOKAHEAD_WPS:
-                # Publish the first LOOKAHEAD_WPS waypoints
-                waypoints = self.all_waypoints[0:LOOKAHEAD_WPS]
+            if len(self.all_waypoints) > 0 and self.current_pose is not None:
+
+                # Get waypoints
+                waypoints = self.all_waypoints
+
+                # Find the nearest waypoint
+                position = self.current_pose.position
+                closest_distance = float('inf')
+                closest_waypoint = 0
+                for i in range(len(waypoints)):
+                    this_distance = self.distance_to_position(waypoints, i, position)
+                    if this_distance < closest_distance:
+                        closest_distance = this_distance
+                        closest_waypoint = i
+
+                # Log
+                rospy.loginfo("Closest waypoint: " + str(closest_waypoint) + " of " + str(len(waypoints)) + " at distance: " + str(closest_distance) + "Waypoint:\n" + str(waypoints[closest_waypoint]) )
+
+                # Set velocity
+                for i in range(10):
+                    self.set_waypoint_velocity(waypoints, i, 1)
+                    rospy.loginfo("Waypoint:\n" + str(waypoints[i]) + "\nPosition: " + str(self.current_pose))
+
+                # Calculate distance
+                distance = self.distance(waypoints, 0, 1)
+                rospy.loginfo("Waypoint distance: " + str(distance))
+
+                # Publish waypoints
                 lane.header.stamp = rospy.Time.now()
                 lane.waypoints = waypoints
                 self.final_waypoints_pub.publish(lane)
@@ -58,9 +84,10 @@ class WaypointUpdater(object):
             rate.sleep()
 
 
-    def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+    def pose_cb(self, current_pose):
+
+        # Save current pose
+        self.current_pose = current_pose.pose
 
     def waypoints_cb(self, waypoints):
 
@@ -89,6 +116,10 @@ class WaypointUpdater(object):
             wp1 = i
         return dist
 
+    def distance_to_position(self, waypoints, wp, position):
+        calculate_distance = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+        distance = calculate_distance(waypoints[wp].pose.pose.position, position)
+        return distance
 
 if __name__ == '__main__':
     try:
