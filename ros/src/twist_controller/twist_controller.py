@@ -18,13 +18,22 @@ class Controller(object):
 
     def control(self, linear_velocity, angular_velocity, current_linear_velocity, dbw_enabled):
 
-    	# Run PID step
-    	difference = linear_velocity - current_linear_velocity
-    	throttle = self.pid.step(difference, rospy.get_time() - self.previous_time)
+    	# Run controllers
+    	steering = 0
+    	throttle = 0
+    	if dbw_enabled:
+	        # Get steering
+	        steering = self.yaw_controller.get_steering(linear_velocity, angular_velocity, current_linear_velocity)
+
+	        # Get throttle
+	    	throttle = self.pid.step(linear_velocity - current_linear_velocity, rospy.get_time() - self.previous_time)
         self.previous_time = rospy.get_time()
 
-        # Get steering
-        steering = self.yaw_controller.get_steering(linear_velocity, angular_velocity, current_linear_velocity)
+        # Calculate braking torque
+        brake = 0
+        if throttle < 0:
+        	brake = -throttle
+        	throttle = 0
 
         # Return throttle, brake, steering
-        return throttle, 0., steering
+        return throttle, brake, steering
