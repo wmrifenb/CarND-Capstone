@@ -56,7 +56,8 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd', BrakeCmd, queue_size=1)
 
         # Create `TwistController` object
-        self.controller = Controller()
+        min_speed = 1
+        self.controller = Controller(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
         # Subscribe to twist_cmd messages
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_callback)
@@ -81,7 +82,7 @@ class DBWNode(object):
     def current_velocity_callback(self, current_velocity):
 
         # Save
-        self.current_velocity = current_velocity
+        self.current_velocity = current_velocity.twist.linear.x
 
     def loop(self):
         rate = rospy.Rate(5) # 5Hz
