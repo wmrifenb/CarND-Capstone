@@ -3,7 +3,7 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
-
+from std_msgs.msg import Int32
 import math
 
 '''
@@ -28,15 +28,22 @@ class WaypointUpdater(object):
 
         # A list of all waypoints
         self.all_waypoints = []
+        
+        # The car's current position
         self.current_pose = None
+        
+        # The index in all_waypoints of the next red traffic light
+        self.traffic_light_waypoint_index = -1
 
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+        # Subscribe to waypoints and pose
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
 
         # Subscribers for /traffic_waypoint and /obstacle_waypoint
-        rospy.Subscriber('/traffic_waypoint', Lane, self.traffic_cb)
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
         rospy.Subscriber('/obstacle_waypoint', Lane, self.obstacle_cb)
 
+        # Publish final_waypoints
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # Create waypoints Lane for publishing
@@ -70,10 +77,16 @@ class WaypointUpdater(object):
                 end_waypoint = min(len(waypoints), closest_waypoint + LOOKAHEAD_WPS)
                 waypoints = waypoints[closest_waypoint:end_waypoint]
 
-                # Set velocity
+                # Set velocity to 50 MPH in m/s
+                target_velocity = 22.7
+
+                # If we have a red light, stop
+                if self.traffic_light_waypoint_index != -1:
+                    target_velocity = 1
+
+                # Set velocity of waypoints                    
                 for i in range(len(waypoints)):
-                    self.set_waypoint_velocity(waypoints, i, 22.7) # 50 MPH please in m/s
-                    #rospy.loginfo("Waypoint:\n" + str(waypoints[i]) + "\nOur position:\n" + str(self.current_pose))
+                    self.set_waypoint_velocity(waypoints, i, target_velocity)
 
                 # Publish waypoints
                 lane.header.stamp = rospy.Time.now()
@@ -82,7 +95,6 @@ class WaypointUpdater(object):
 
             # Sleep
             rate.sleep()
-
 
     def pose_cb(self, current_pose):
 
@@ -95,7 +107,8 @@ class WaypointUpdater(object):
         self.all_waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message.
+        rospy.loginfo("Setting light to " + str(msg.data))
+        self.traffic_light_waypoint_index = msg.data
         pass
 
     def obstacle_cb(self, msg):

@@ -1,3 +1,4 @@
+import rospy
 from styx_msgs.msg import TrafficLight
 
 class TLClassifier(object):
@@ -15,5 +16,8 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        #TODO implement light color prediction
+
+        rospy.loginfo( "Size of image: " + len(image))
+        
+        
         return TrafficLight.UNKNOWN
