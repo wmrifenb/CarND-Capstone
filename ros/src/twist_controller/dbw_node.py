@@ -85,7 +85,7 @@ class DBWNode(object):
         self.current_velocity = current_velocity.twist.linear.x
 
     def loop(self):
-        rate = rospy.Rate(5) # 5Hz
+        rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
 
             # Get planned velocities

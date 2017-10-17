@@ -19,7 +19,7 @@ current status in `/vehicle/traffic_lights` message. You can use this message to
 as well as to verify your TL classifier.
 '''
 
-LOOKAHEAD_WPS = 20 # Number of waypoints we will publish.
+LOOKAHEAD_WPS = 200 # Number of waypoints we will publish.
 
 
 class WaypointUpdater(object):
@@ -66,12 +66,13 @@ class WaypointUpdater(object):
                 # Log
                 #rospy.loginfo("Closest waypoint: " + str(closest_waypoint) + " of " + str(len(waypoints)) + " at distance: " + str(closest_distance) + "\nThe waypoint:\n" + str(waypoints[closest_waypoint]) )
 
-                # Cut this f b up
-                waypoints = waypoints[closest_waypoint:closest_waypoint+10]
+                # Cut waypoints from closest_waypoint to LOOKAHEAD_WPS or end of list
+                end_waypoint = min(len(waypoints), closest_waypoint + LOOKAHEAD_WPS)
+                waypoints = waypoints[closest_waypoint:end_waypoint]
 
                 # Set velocity
-                for i in range(0, 10):
-                    self.set_waypoint_velocity(waypoints, i, 10)
+                for i in range(len(waypoints)):
+                    self.set_waypoint_velocity(waypoints, i, 22.7) # 50 MPH please in m/s
                     #rospy.loginfo("Waypoint:\n" + str(waypoints[i]) + "\nOur position:\n" + str(self.current_pose))
 
                 # Publish waypoints

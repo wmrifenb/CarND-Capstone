@@ -10,9 +10,11 @@ ONE_MPH = 0.44704
 class Controller(object):
     def __init__(self, wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle):
 
-    	self.pid = PID(1, 1, 1)
+	# Init controllers
+    	self.pid = PID(1, 0, 0)
     	self.yaw_controller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
+        # Save time for delta time calculation
     	self.previous_time = rospy.get_time()
 
 
@@ -26,7 +28,9 @@ class Controller(object):
 	        steering = self.yaw_controller.get_steering(linear_velocity, angular_velocity, current_linear_velocity)
 
 	        # Get throttle
-	    	throttle = self.pid.step(linear_velocity - current_linear_velocity, rospy.get_time() - self.previous_time)
+                throttle = self.pid.step(linear_velocity - current_linear_velocity, rospy.get_time() - self.previous_time)
+
+        # Save time for delta time calculation
         self.previous_time = rospy.get_time()
 
         # Calculate braking torque
@@ -34,6 +38,13 @@ class Controller(object):
         if throttle < 0:
         	brake = -throttle
         	throttle = 0
+        	
+        # Cap
+        throttle = min(max(throttle, 0.0), 1.0)
+        
+        # Log
+        rospy.loginfo( "Target velocity: " + str(linear_velocity) + " Current velocity: " + str(current_linear_velocity) + " Throttle: " + str(throttle))
+        rospy.loginfo( "Angular velocity: " + str(angular_velocity) + " Steering: " + str(steering))
 
         # Return throttle, brake, steering
         return throttle, brake, steering
