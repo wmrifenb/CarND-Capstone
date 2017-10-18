@@ -132,17 +132,21 @@ class TLDetector(object):
                     closest_waypoint = i
             stop_line_waypoints.append(closest_waypoint)
 
-        rospy.loginfo("stop_line_waypoints:")
-        rospy.loginfo(stop_line_waypoints)
+        # Log
+        #rospy.loginfo("stop_line_waypoints:")
+        #rospy.loginfo(stop_line_waypoints)
 
         # Now find the stop_line waypoint that closest to but not behind car_position_waypoint
         closest_stop_line_waypoint = 1000000
-        for stop_line_waypoint in stop_line_waypoints:
+        closest_stop_line_index = -1
+        for i, stop_line_waypoint in enumerate(stop_line_waypoints):
+            # If it's past the car, and closer than we've seen so far
             if stop_line_waypoint > car_position_waypoint and stop_line_waypoint < closest_stop_line_waypoint:
                 closest_stop_line_waypoint = stop_line_waypoint
-                
+                closest_stop_line_index = i
+
         # Return
-        return closest_stop_line_waypoint
+        return closest_stop_line_index, closest_stop_line_waypoint
 
     def distance_to_position(self, waypoints, wp, position):
         calculate_distance = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
@@ -185,25 +189,32 @@ class TLDetector(object):
         stop_line_positions = self.config['stop_line_positions']
         
         # Find which waypoint the car is closest to
+        closest_stop_line_waypoint = -1
+        index = -1
+        traffic_light_state = TrafficLight.UNKNOWN
         if(self.pose):
             car_position_waypoint = self.get_closest_waypoint(self.pose.pose)
 
             # Find the closest traffic light based on stop positions
-            closest_stop_line_waypoint = self.get_closest_stop_line_waypoint(self.waypoints, car_position_waypoint, stop_line_positions)
+            index, closest_stop_line_waypoint = self.get_closest_stop_line_waypoint(self.waypoints, car_position_waypoint, stop_line_positions)
+
+            # Get traffic light state
+            if len(self.lights) > 0 and index >= 0 and index < len(self.lights):
+                # Use matching index from stop_line_positions and hope that they align
+                traffic_light_state = self.lights[index].state
 
             # Log
             rospy.loginfo("car_position_waypoint: " + str(car_position_waypoint))
             rospy.loginfo("closest_stop_line_waypoint: " + str(closest_stop_line_waypoint))
     #        rospy.loginfo("stop_line_positions:")  
     #        rospy.loginfo(stop_line_positions)
-    #        rospy.loginfo("lights:")
-    #        rospy.loginfo(self.lights)
-            
-        return closest_stop_line_waypoint, TrafficLight.RED
+            rospy.loginfo("traffic light state: " + str(self.lights[0].state))
+        
+        return closest_stop_line_waypoint, traffic_light_state
 
-        if light:
-            state = self.get_light_state(light)
-            return light_wp, state
+#        if light:
+#            state = self.get_light_state(light)
+#            return light_wp, state
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':

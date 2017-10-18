@@ -82,7 +82,7 @@ class WaypointUpdater(object):
 
                 # If we have a red light, stop
                 if self.traffic_light_waypoint_index != -1:
-                    target_velocity = 1
+                    target_velocity = 0.1
 
                 # Set velocity of waypoints                    
                 for i in range(len(waypoints)):
