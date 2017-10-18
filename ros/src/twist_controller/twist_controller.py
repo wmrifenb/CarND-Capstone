@@ -24,11 +24,11 @@ class Controller(object):
     	steering = 0
     	throttle = 0
     	if dbw_enabled:
-	        # Get steering
-	        steering = self.yaw_controller.get_steering(linear_velocity, angular_velocity, current_linear_velocity)
+            # Get steering
+            steering = self.yaw_controller.get_steering(linear_velocity, angular_velocity, current_linear_velocity)
 
-	        # Get throttle
-                throttle = self.pid.step(linear_velocity - current_linear_velocity, rospy.get_time() - self.previous_time)
+            # Get throttle
+            throttle = self.pid.step(linear_velocity - current_linear_velocity, rospy.get_time() - self.previous_time)
 
         # Save time for delta time calculation
         self.previous_time = rospy.get_time()
@@ -36,15 +36,15 @@ class Controller(object):
         # Calculate braking torque
         brake = 0
         if throttle < 0:
-        	brake = -throttle
+        	brake = -throttle * 1000
         	throttle = 0
         	
         # Cap
         throttle = min(max(throttle, 0.0), 1.0)
         
         # Log
-        rospy.loginfo( "Target velocity: " + str(linear_velocity) + " Current velocity: " + str(current_linear_velocity) + " Throttle: " + str(throttle))
-        rospy.loginfo( "Angular velocity: " + str(angular_velocity) + " Steering: " + str(steering))
+        rospy.loginfo("Target velocity: " + str(linear_velocity) + " Current velocity: " + str(current_linear_velocity) + " Throttle: " + str(throttle) + " Brake: " + str(brake))
+        rospy.loginfo("Angular velocity: " + str(angular_velocity) + " Steering: " + str(steering))
 
         # Return throttle, brake, steering
         return throttle, brake, steering

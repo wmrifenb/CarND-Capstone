@@ -79,14 +79,36 @@ class WaypointUpdater(object):
 
                 # Set velocity to 50 MPH in m/s
                 target_velocity = 22.7
+                
+                # We slow down and stop in 50 waypoints
+                STOPPING_WAYPOINTS = 50
+
+                # Set all waypoints to full speed ahead target_velocity  
+                for waypoint_i, waypoint in enumerate(waypoints):
+                    self.set_waypoint_velocity(waypoints, waypoint_i, target_velocity)
 
                 # If we have a red light, stop
+                rospy.loginfo("Waypoint traffic light waypoint index: " + str(self.traffic_light_waypoint_index))
                 if self.traffic_light_waypoint_index != -1:
-                    target_velocity = 0.1
+                
+                    # Get waypoint index into waypoints of our stop line                
+                    stopping_waypoint = self.traffic_light_waypoint_index - closest_waypoint
 
-                # Set velocity of waypoints                    
-                for i in range(len(waypoints)):
-                    self.set_waypoint_velocity(waypoints, i, target_velocity)
+                    # Get waypoint index STOPPING_WAYPOINTS back from stop line where we start slowing down, which could be negative
+                    slowing_down_waypoint = stopping_waypoint - STOPPING_WAYPOINTS
+
+                    # Interpolate velocities from slowing_down_waypoint to stopping_waypoint
+                    velocity = target_velocity
+                    for waypoint_i in range(slowing_down_waypoint, stopping_waypoint):
+                        velocity -= target_velocity/STOPPING_WAYPOINTS
+                        if waypoint_i >= 0 and waypoint_i < len(waypoints):
+                            self.set_waypoint_velocity(waypoints, waypoint_i, velocity)
+                            rospy.loginfo("Waypoint velocity: " + str(velocity))
+                        
+                    # Set waypoints after stopping_waypoint also to 0
+                    for waypoint_i in range(stopping_waypoint, len(waypoints)):
+                        if waypoint_i >= 0 and waypoint_i < len(waypoints):
+                            self.set_waypoint_velocity(waypoints, waypoint_i, 0)
 
                 # Publish waypoints
                 lane.header.stamp = rospy.Time.now()
@@ -107,7 +129,6 @@ class WaypointUpdater(object):
         self.all_waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
-        rospy.loginfo("Setting light to " + str(msg.data))
         self.traffic_light_waypoint_index = msg.data
         pass
 
