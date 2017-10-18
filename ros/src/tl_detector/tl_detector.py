@@ -115,19 +115,21 @@ class TLDetector(object):
     
         # Go through all stop_lines, and find their nearest waypoint
         stop_line_waypoints = []
-        for i in range(len(stop_line_positions)):
-        
-            # Find the nearest waypoint to this stopline
+        for stop_line_position in stop_line_positions:
+
+            # Get position of this stop line
+            pose = Pose()
+            pose.position.x = stop_line_position[0]
+            pose.position.y = stop_line_position[1]
+            
+            # Find the nearest waypoint to this stopline position
             closest_distance = float('inf')
             closest_waypoint = 0
-            for j in range(len(self.waypoints)):
-                pose = Pose()
-                pose.position.x = stop_line_positions[i][0]
-                pose.position.y = stop_line_positions[i][1]
+            for i, waypoint in enumerate(self.waypoints):
                 this_distance = self.distance_to_position(self.waypoints, i, pose.position)
                 if this_distance < closest_distance:
                     closest_distance = this_distance
-                    closest_waypoint = j
+                    closest_waypoint = i
             stop_line_waypoints.append(closest_waypoint)
 
         rospy.loginfo("stop_line_waypoints:")
@@ -186,19 +188,17 @@ class TLDetector(object):
         if(self.pose):
             car_position_waypoint = self.get_closest_waypoint(self.pose.pose)
 
-        # Find the closest traffic light based on stop positions
-        closest_stop_line_waypoint = self.get_closest_stop_line_waypoint(self.waypoints, car_position_waypoint, stop_line_positions)
-        
-#        rospy.loginfo("stop_line_positions")  
-#        rospy.loginfo(stop_line_positions)      
-#        rospy.loginfo("lights")
-#        rospy.loginfo(self.lights)
-        rospy.loginfo("car_position_waypoint")
-        rospy.loginfo(car_position_waypoint)
-#        rospy.loginfo("self.pose.pose")
-#        rospy.loginfo(self.pose.pose)
-        rospy.loginfo("closest_stop_line_waypoint")
-        rospy.loginfo(closest_stop_line_waypoint)
+            # Find the closest traffic light based on stop positions
+            closest_stop_line_waypoint = self.get_closest_stop_line_waypoint(self.waypoints, car_position_waypoint, stop_line_positions)
+
+            # Log
+            rospy.loginfo("car_position_waypoint: " + str(car_position_waypoint))
+            rospy.loginfo("closest_stop_line_waypoint: " + str(closest_stop_line_waypoint))
+    #        rospy.loginfo("stop_line_positions:")  
+    #        rospy.loginfo(stop_line_positions)
+    #        rospy.loginfo("lights:")
+    #        rospy.loginfo(self.lights)
+            
         return closest_stop_line_waypoint, TrafficLight.RED
 
         if light:
