@@ -153,24 +153,19 @@ class TLDetector(object):
         distance = calculate_distance(waypoints[wp].pose.pose.position, position)
         return distance
 
-    def get_light_state(self, light):
+    def get_light_state(self, traffic_light_state_truth):
         """Determines the current color of the traffic light
-
-        Args:
-            light (TrafficLight): light to classify
 
         Returns:
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        if(not self.has_image):
-            self.prev_light_loc = None
+        if not self.has_image:
             return False
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-
         # Get classification
-        return self.light_classifier.get_classification(cv_image)
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        return self.light_classifier.get_classification(cv_image, traffic_light_state_truth)
 
 
     def process_traffic_lights(self):
@@ -190,7 +185,6 @@ class TLDetector(object):
         
         # Find which waypoint the car is closest to
         closest_stop_line_waypoint = -1
-        index = -1
         traffic_light_state = TrafficLight.UNKNOWN
         if(self.pose):
             car_position_waypoint = self.get_closest_waypoint(self.pose.pose)
@@ -198,24 +192,30 @@ class TLDetector(object):
             # Find the closest traffic light based on stop positions
             index, closest_stop_line_waypoint = self.get_closest_stop_line_waypoint(self.waypoints, car_position_waypoint, stop_line_positions)
 
-            # Get traffic light state
+            # Get traffic light state ground truth from simulator provided lights list
+            traffic_light_state_truth = TrafficLight.UNKNOWN
             if len(self.lights) > 0 and index >= 0 and index < len(self.lights):
                 # Use matching index from stop_line_positions and hope that they align
-                traffic_light_state = self.lights[index].state
+                traffic_light_state_truth = self.lights[index].state
+
+            # Get traffic light state from camera image
+            traffic_light_state = self.get_light_state(traffic_light_state_truth)
+
+            # Fake it
+            traffic_light_state = traffic_light_state_truth
+
+            # Speaking the truth?
+            if traffic_light_state != traffic_light_state_truth:
+                rospy.loginfo("Warning: Detected traffic light state differs from truth, detected: " + str(traffic_light_state) + " Truth: " + str(traffic_light_state_truth))
 
             # Log
-            rospy.loginfo("car_position_waypoint: " + str(car_position_waypoint))
-            rospy.loginfo("closest_stop_line_waypoint: " + str(closest_stop_line_waypoint))
-    #        rospy.loginfo("stop_line_positions:")  
-    #        rospy.loginfo(stop_line_positions)
-            rospy.loginfo("traffic light state: " + str(self.lights[0].state))
+            #rospy.loginfo("car_position_waypoint: " + str(car_position_waypoint))
+            #rospy.loginfo("closest_stop_line_waypoint: " + str(closest_stop_line_waypoint))
+            #rospy.loginfo("stop_line_positions:")  
+            #rospy.loginfo(stop_line_positions)
         
         return closest_stop_line_waypoint, traffic_light_state
 
-#        if light:
-#            state = self.get_light_state(light)
-#            return light_wp, state
-        return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
     try:
