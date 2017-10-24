@@ -19,7 +19,7 @@ for dir in [(0,'red'), (1,'yellow'), (2,'green'), (4,'unknown')]:
     filelist = sorted(glob.glob('ros/src/tl_detector/' + dir[1] + '/*.png' ))
     images_in = [cv2.imread(filename) for filename in filelist]
     images_in = [cv2.cvtColor(image, cv2.COLOR_BGR2RGB) for image in images_in]
-    images_in = [cv2.resize(image, (32, 32)) for image in images_in]
+    images_in = [cv2.resize(image, (320, 320)) for image in images_in]
 
     # Add to lists
     images += images_in
@@ -111,7 +111,7 @@ BATCH_SIZE = 128
 LEARNING_RATE = 0.001
 
 # Inputs
-x = tf.placeholder(tf.float32, (None, 32, 32, 3))
+x = tf.placeholder(tf.float32, (None, 320, 320, 3))
 y = tf.placeholder(tf.int32, (None))
 one_hot_y = tf.one_hot(y, n_classes)
 
@@ -157,9 +157,7 @@ def train(X_train, y_train):
 
             # Evaluate
             validation_accuracy = evaluate(X_validation, y_validation)
-            print("EPOCH {} ...".format(i+1))
-            print("Validation Accuracy = {:.3f}".format(validation_accuracy))
-            print()
+            print("EPOCH {}, validation accuracy = {:.2f}".format(i+1, validation_accuracy))
 
         # Save
         saver.save(sess, './model')
