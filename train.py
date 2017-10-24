@@ -110,7 +110,7 @@ BATCH_SIZE = 128
 LEARNING_RATE = 0.001
 
 # Inputs
-x = tf.placeholder(tf.float32, (None, 32, 32, 3))
+x = tf.placeholder(tf.float32, (None, 320, 320, 3))
 y = tf.placeholder(tf.int32, (None))
 one_hot_y = tf.one_hot(y, n_classes)
 
@@ -156,9 +156,7 @@ def train(X_train, y_train):
 
             # Evaluate
             validation_accuracy = evaluate(X_validation, y_validation)
-            print("EPOCH {} ...".format(i+1))
-            print("Validation Accuracy = {:.3f}".format(validation_accuracy))
-            print()
+            print("EPOCH {}, validation accuracy = {:.2f}".format(i+1, validation_accuracy))
 
         # Save
         saver.save(sess, './model')
