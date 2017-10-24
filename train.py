@@ -5,7 +5,6 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
-from skimage.exposure import rescale_intensity
 
 # Start
 print("Running on TensorFlow " + str(tf.__version__))
@@ -19,13 +18,13 @@ for dir in [(0,'red'), (1,'yellow'), (2,'green'), (4,'unknown')]:
     filelist = sorted(glob.glob('ros/src/tl_detector/' + dir[1] + '/*.png' ))
     images_in = [cv2.imread(filename) for filename in filelist]
     images_in = [cv2.cvtColor(image, cv2.COLOR_BGR2RGB) for image in images_in]
-    images_in = [cv2.resize(image, (32, 32)) for image in images_in]
+    images_in = [cv2.resize(image, (224, 224)) for image in images_in]
 
     # Add to lists
     images += images_in
     labels_in = [dir[0]] * len(images_in)
     labels += labels_in
-      
+
 # Save a sample image
 cv2.imwrite("sample.png", images[0])
 
