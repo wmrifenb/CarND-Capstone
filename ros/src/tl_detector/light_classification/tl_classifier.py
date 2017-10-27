@@ -2,7 +2,10 @@ import rospy
 from styx_msgs.msg import TrafficLight
 import tensorflow as tf
 import cv2
-from model import Model
+from model import Model, image_width, image_height
+from keras.preprocessing.image import img_to_array
+import numpy as np
+import scipy
 
 class TLClassifier(object):
     def __init__(self):
@@ -12,7 +15,10 @@ class TLClassifier(object):
         self.yellow_image_number = 0
         self.green_image_number = 0
         self.unknown_image_number = 0
-        
+
+        self.model = Model()
+        self.model.load_weights("light_classification/model.h5")
+
 
     def get_classification(self, image, traffic_light_state_truth):
         """Determines the color of the traffic light in the image
@@ -24,9 +30,25 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        
+        # Time to run the network?
+        INFERENCE = True
+        if INFERENCE:
+            image = scipy.misc.imresize(image, (image_height, image_width))
+            image = img_to_array(image)
+            image /= 255.0
+            image = np.expand_dims(image, axis=0)
+            preds = self.model.predict(image)[0]
+            print(preds)
+            prediction = np.argmax(preds)
+            rospy.loginfo("Model says: " + str(prediction))
+            if prediction == 0: return TrafficLight.RED
+            if prediction == 1: return TrafficLight.YELLOW
+            if prediction == 2: return TrafficLight.GREEN
+            return TrafficLight.UNKNOWN
 
-        # What... is the light
-        if True:
+        # Save training data
+        else:
             if traffic_light_state_truth == TrafficLight.RED:
                 self.red_image_number += 1
                 cv2.imwrite("new/red/image_" + str(self.red_image_number) + ".png", image)

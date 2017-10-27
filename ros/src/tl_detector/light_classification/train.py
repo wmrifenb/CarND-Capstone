@@ -1,14 +1,11 @@
 from keras.preprocessing.image import ImageDataGenerator
 import tensorflow as tf
-from model import Model
+from model import Model, image_width, image_height
 
 # Start
 print("Running on TensorFlow " + str(tf.__version__))
 
 # Height and width to convert our images to before feeding in
-img_width = 224
-img_height = 224
-input_shape = (img_width, img_height, 3)
 
 # Set configuration
 train_data_dir = 'train'
@@ -19,7 +16,7 @@ epochs = 50
 batch_size = 16
 
 # Compile
-model = Model(input_shape)
+model = Model()
 model.compile(loss='categorical_crossentropy',
               optimizer='adam',
               metrics=['accuracy'])
@@ -38,7 +35,7 @@ test_datagen = ImageDataGenerator(rescale=1.0 / 255)
 print("Training:")
 train_generator = train_datagen.flow_from_directory(
     train_data_dir,
-    target_size=(img_width, img_height),
+    target_size=(image_width, image_height),
     batch_size=batch_size,
     class_mode='categorical')
 
@@ -46,7 +43,7 @@ train_generator = train_datagen.flow_from_directory(
 print("Validation:")
 validation_generator = test_datagen.flow_from_directory(
     validation_data_dir,
-    target_size=(img_width, img_height),
+    target_size=(image_width, image_height),
     batch_size=batch_size,
     class_mode='categorical')
 
