@@ -200,6 +200,18 @@ class TLDetector(object):
 
             # Get traffic light state from camera image
             traffic_light_state = self.get_light_state(traffic_light_state_truth)
+            
+            text = ""
+            if traffic_light_state == 0: text = "Red."
+            if traffic_light_state == 1: text = "Yellow."
+            if traffic_light_state == 2: text = "Green."
+            if traffic_light_state == 3: text = "Unknown."
+            real = ""
+            if traffic_light_state_truth == 0: real = "Red."
+            if traffic_light_state_truth == 1: real = "Yellow."
+            if traffic_light_state_truth == 2: real = "Green."
+            if traffic_light_state_truth == 3: real = "Unknown."
+            print(text + "  Real: " + real)
 
             # Fake it
             traffic_light_state = traffic_light_state_truth

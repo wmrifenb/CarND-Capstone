@@ -18,6 +18,7 @@ class TLClassifier(object):
 
         self.model = Model()
         self.model.load_weights("light_classification/model.h5")
+        self.graph = tf.get_default_graph()
 
 
     def get_classification(self, image, traffic_light_state_truth):
@@ -38,10 +39,11 @@ class TLClassifier(object):
             image = img_to_array(image)
             image /= 255.0
             image = np.expand_dims(image, axis=0)
-            preds = self.model.predict(image)[0]
-            print(preds)
+            with self.graph.as_default():
+                preds = self.model.predict(image)[0]
+            #print(preds)
             prediction = np.argmax(preds)
-            rospy.loginfo("Model says: " + str(prediction))
+            #rospy.loginfo("Model says: " + str(prediction))
             if prediction == 0: return TrafficLight.RED
             if prediction == 1: return TrafficLight.YELLOW
             if prediction == 2: return TrafficLight.GREEN

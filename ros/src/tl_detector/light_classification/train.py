@@ -1,6 +1,9 @@
-from keras.preprocessing.image import ImageDataGenerator
 import tensorflow as tf
+import numpy as np
+from keras.preprocessing.image import ImageDataGenerator
+from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
 from model import Model, image_width, image_height
+from styx_msgs.msg import TrafficLight
 
 # Start
 print("Running on TensorFlow " + str(tf.__version__))
@@ -31,10 +34,15 @@ train_datagen = ImageDataGenerator(
 # Just rescale color for test data
 test_datagen = ImageDataGenerator(rescale=1.0 / 255)
 
+# Predefine classes
+classes = ['red', 'yellow', 'green', 'none']
+print("Classes: " + str(TrafficLight.RED) + ", " + str(TrafficLight.YELLOW) + ", " + str(TrafficLight.GREEN) + ", " + str(TrafficLight.UNKNOWN) + " = " + str(classes))
+
 # Training data
 print("Training:")
 train_generator = train_datagen.flow_from_directory(
     train_data_dir,
+    classes=classes,
     target_size=(image_width, image_height),
     batch_size=batch_size,
     class_mode='categorical')
@@ -43,9 +51,15 @@ train_generator = train_datagen.flow_from_directory(
 print("Validation:")
 validation_generator = test_datagen.flow_from_directory(
     validation_data_dir,
+    classes=classes,
     target_size=(image_width, image_height),
     batch_size=batch_size,
     class_mode='categorical')
+    
+# Callbacks
+checkpoint = ModelCheckpoint(filepath='./model_checkpoint.h5', verbose=1, save_best_only=True)
+lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1), cooldown=0, patience=5, min_lr=0.5e-6)
+callbacks = [checkpoint, lr_reducer]
 
 # Train
 model.fit_generator(
@@ -53,7 +67,8 @@ model.fit_generator(
     steps_per_epoch = nb_train_samples // batch_size,
     validation_data = validation_generator,
     validation_steps = nb_validation_samples // batch_size,
-    epochs=epochs)
+    epochs=epochs,
+    callbacks=callbacks)
 
 # Save
 model.save_weights('model.h5')
