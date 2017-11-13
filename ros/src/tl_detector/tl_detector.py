@@ -17,7 +17,7 @@ STATE_COUNT_THRESHOLD = 3
 class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
-        
+
         self.pose = None
         self.waypoints = []
         self.camera_image = None
@@ -25,7 +25,7 @@ class TLDetector(object):
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-        
+
         '''
         /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
         helps you acquire an accurate ground truth data source for the traffic light
@@ -110,9 +110,9 @@ class TLDetector(object):
                 closest_distance = this_distance
                 closest_waypoint = i
         return closest_waypoint
-        
+
     def get_closest_stop_line_waypoint(self, waypoints, car_position_waypoint, stop_line_positions):
-    
+
         # Go through all stop_lines, and find their nearest waypoint
         stop_line_waypoints = []
         for stop_line_position in stop_line_positions:
@@ -121,7 +121,7 @@ class TLDetector(object):
             pose = Pose()
             pose.position.x = stop_line_position[0]
             pose.position.y = stop_line_position[1]
-            
+
             # Find the nearest waypoint to this stopline position
             closest_distance = float('inf')
             closest_waypoint = 0
@@ -176,13 +176,13 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        
+
         # Our closest visible traffic light starts off as none
         closest_traffic_light_waypoint = -1
 
         # Get the list of 'stop line' positions
         stop_line_positions = self.config['stop_line_positions']
-        
+
         # Find which waypoint the car is closest to
         closest_stop_line_waypoint = -1
         traffic_light_state = TrafficLight.UNKNOWN
@@ -200,7 +200,7 @@ class TLDetector(object):
 
             # Get traffic light state from camera image
             traffic_light_state = self.get_light_state(traffic_light_state_truth)
-            
+
             text = ""
             if traffic_light_state == 0: text = "Red."
             if traffic_light_state == 1: text = "Yellow."
@@ -211,7 +211,7 @@ class TLDetector(object):
             if traffic_light_state_truth == 1: real = "Yellow."
             if traffic_light_state_truth == 2: real = "Green."
             if traffic_light_state_truth == 3: real = "Unknown."
-            print(text + "  Real: " + real)
+            #print(text + "  Real: " + real)
 
             # Fake it
             traffic_light_state = traffic_light_state_truth
@@ -223,9 +223,9 @@ class TLDetector(object):
             # Log
             #rospy.loginfo("car_position_waypoint: " + str(car_position_waypoint))
             #rospy.loginfo("closest_stop_line_waypoint: " + str(closest_stop_line_waypoint))
-            #rospy.loginfo("stop_line_positions:")  
+            #rospy.loginfo("stop_line_positions:")
             #rospy.loginfo(stop_line_positions)
-        
+
         return closest_stop_line_waypoint, traffic_light_state
 
 
