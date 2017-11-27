@@ -17,7 +17,7 @@ class TLClassifier(object):
         self.unknown_image_number = 0
 
         self.model = Model()
-        #self.model.load_weights("light_classification/model.h5")
+        self.model.load_weights("light_classification/model.h5")
         self.graph = tf.get_default_graph()
 
 
@@ -32,7 +32,7 @@ class TLClassifier(object):
 
         """
 
-        PATH = "/home/mikep/Documents/Udacity/Autonomous/CarND-Capstone/"
+        #PATH = "/home/mikep/Documents/Udacity/Autonomous/CarND-Capstone/"
 
         # Time to run the network?
         INFERENCE = False
