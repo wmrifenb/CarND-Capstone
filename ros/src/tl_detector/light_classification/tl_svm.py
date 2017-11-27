@@ -28,7 +28,7 @@ class TL_SVM():
 
         counts = np.bincount(classes)
         light = np.argmax(counts)
-        #print(light)
+        print(light)
 
         t2 = time()
         #print(t2-t1)
@@ -36,19 +36,6 @@ class TL_SVM():
         if light == RED: return TrafficLight.RED
         if light == YELLOW: return TrafficLight.YELLOW
         if light == GREEN: return TrafficLight.GREEN
-
-        """
-        str_classes = []
-        for temp in classes:
-            if temp == RED:
-                str_classes.append("Red")
-            elif temp == YELLOW:
-                str_classes.append("Yellow")
-            elif temp == GREEN:
-                str_classes.append("Green")
-
-        print(str_classes)
-        """
 
     def classify_rois(self, img, boxes):
         classes = []
