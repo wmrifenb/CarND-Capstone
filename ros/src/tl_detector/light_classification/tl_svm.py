@@ -28,7 +28,7 @@ class TL_SVM():
 
         counts = np.bincount(classes)
         light = np.argmax(counts)
-        print(light)
+        #print(light)
 
         t2 = time()
         #print(t2-t1)

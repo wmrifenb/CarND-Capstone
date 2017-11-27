@@ -82,11 +82,13 @@ class TLDetector(object):
         # The publisher of the next red traffic light waypoint index
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
+        rospy.spin()
 
+    def pose_cb(self, msg):
+        self.pose = msg
 
-
-
-
+    def waypoints_cb(self, waypoints):
+        self.waypoints = waypoints.waypoints
 
         stop_line_positions = self.config['stop_line_positions']
         self.stop_line_waypoints = []
@@ -107,22 +109,6 @@ class TLDetector(object):
                     closest_waypoint = i
             self.stop_line_waypoints.append(closest_waypoint)
 
-
-
-
-
-
-
-
-
-        rospy.spin()
-
-    def pose_cb(self, msg):
-        self.pose = msg
-
-    def waypoints_cb(self, waypoints):
-        self.waypoints = waypoints.waypoints
-
     def traffic_cb(self, msg):
         self.lights = msg.lights
 
@@ -137,6 +123,9 @@ class TLDetector(object):
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
+        print(light_wp)
+        print(state)
+        print()
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -199,26 +188,28 @@ class TLDetector(object):
         """
 
         t2 = time()
+        if not hasattr(self, 'stop_line_waypoints'): return -1, 1000000
+        else:
 
-        # Log
-        #rospy.loginfo("stop_line_waypoints:")
-        #rospy.loginfo(stop_line_waypoints)
+            # Log
+            #rospy.loginfo("stop_line_waypoints:")
+            #rospy.loginfo(stop_line_waypoints)
 
-        # Now find the stop_line waypoint that closest to but not behind car_position_waypoint
-        closest_stop_line_waypoint = 1000000
-        closest_stop_line_index = -1
-        for i, stop_line_waypoint in enumerate(self.stop_line_waypoints):
-        #for i, stop_line_waypoint in enumerate(stop_line_waypoints):
-            # If it's past the car, and closer than we've seen so far
-            if stop_line_waypoint > car_position_waypoint and stop_line_waypoint < closest_stop_line_waypoint:
-                closest_stop_line_waypoint = stop_line_waypoint
-                closest_stop_line_index = i
+            # Now find the stop_line waypoint that closest to but not behind car_position_waypoint
+            closest_stop_line_waypoint = 1000000
+            closest_stop_line_index = -1
+            for i, stop_line_waypoint in enumerate(self.stop_line_waypoints):
+            #for i, stop_line_waypoint in enumerate(stop_line_waypoints):
+                # If it's past the car, and closer than we've seen so far
+                if stop_line_waypoint > car_position_waypoint and stop_line_waypoint < closest_stop_line_waypoint:
+                    closest_stop_line_waypoint = stop_line_waypoint
+                    closest_stop_line_index = i
 
-        t3 = time()
-        #print(t3-t2)
+            t3 = time()
+            #print(t3-t2)
 
-        # Return
-        return closest_stop_line_index, closest_stop_line_waypoint
+            # Return
+            return closest_stop_line_index, closest_stop_line_waypoint
 
     def distance_to_position(self, waypoints, wp, position):
         calculate_distance = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
@@ -284,7 +275,8 @@ class TLDetector(object):
         """
 
 
-        return self.light_classifier.classify(cv_image, new_boxes)
+        if len(new_boxes) != 0: return self.light_classifier.classify(cv_image, new_boxes)
+        else: return TrafficLight.UNKNOWN
 
 
     def process_traffic_lights(self):
@@ -341,11 +333,11 @@ class TLDetector(object):
             #print(text + "  Real: " + real)
 
             # Fake it
-            traffic_light_state = traffic_light_state_truth
+            #traffic_light_state = traffic_light_state_truth
 
             # Speaking the truth?
-            if traffic_light_state != traffic_light_state_truth:
-                rospy.loginfo("Warning: Detected traffic light state differs from truth, detected: " + str(traffic_light_state) + " Truth: " + str(traffic_light_state_truth))
+            #if traffic_light_state != traffic_light_state_truth:
+            #    rospy.loginfo("Warning: Detected traffic light state differs from truth, detected: " + str(traffic_light_state) + " Truth: " + str(traffic_light_state_truth))
 
             # Log
             #rospy.loginfo("car_position_waypoint: " + str(car_position_waypoint))
