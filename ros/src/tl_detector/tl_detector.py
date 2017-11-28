@@ -123,9 +123,9 @@ class TLDetector(object):
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
-        print(light_wp)
-        print(state)
-        print()
+        #print(light_wp)
+        #print(state)
+        #print()
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -166,28 +166,6 @@ class TLDetector(object):
 
     def get_closest_stop_line_waypoint(self, waypoints, car_position_waypoint, stop_line_positions):
         # Go through all stop_lines, and find their nearest waypoint
-        t1 = time()
-        """
-        stop_line_waypoints = []
-        for stop_line_position in stop_line_positions:
-
-            # Get position of this stop line
-            pose = Pose()
-            pose.position.x = stop_line_position[0]
-            pose.position.y = stop_line_position[1]
-
-            # Find the nearest waypoint to this stopline position
-            closest_distance = float('inf')
-            closest_waypoint = 0
-            for i, waypoint in enumerate(self.waypoints):
-                this_distance = self.distance_to_position(self.waypoints, i, pose.position)
-                if this_distance < closest_distance:
-                    closest_distance = this_distance
-                    closest_waypoint = i
-            stop_line_waypoints.append(closest_waypoint)
-        """
-
-        t2 = time()
         if not hasattr(self, 'stop_line_waypoints'): return -1, 1000000
         else:
 
@@ -199,14 +177,10 @@ class TLDetector(object):
             closest_stop_line_waypoint = 1000000
             closest_stop_line_index = -1
             for i, stop_line_waypoint in enumerate(self.stop_line_waypoints):
-            #for i, stop_line_waypoint in enumerate(stop_line_waypoints):
-                # If it's past the car, and closer than we've seen so far
                 if stop_line_waypoint > car_position_waypoint and stop_line_waypoint < closest_stop_line_waypoint:
                     closest_stop_line_waypoint = stop_line_waypoint
                     closest_stop_line_index = i
 
-            t3 = time()
-            #print(t3-t2)
 
             # Return
             return closest_stop_line_index, closest_stop_line_waypoint
@@ -225,8 +199,6 @@ class TLDetector(object):
         """
         if not self.has_image:
             return False
-
-        t1 = time()
 
         # Get classification
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
@@ -258,23 +230,6 @@ class TLDetector(object):
         PATH = "/home/mikep/Documents/Udacity/Autonomous/CarND-Capstone/"
         temp_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
 
-        t2 = time()
-        #print(t2-t1)
-
-        """
-        for box in new_boxes:
-            xmin = box[0]
-            xmax = box[1]
-            ymin = box[2]
-            ymax = box[3]
-            cv2.rectangle(temp_image, (ymin, xmin), (ymax, xmax), (0,255,0), 2)
-
-        if self.image_number < 10:
-            cv2.imwrite(PATH+"new/detections/image_" + str(self.image_number) + ".png", temp_image)
-            self.image_number = self.image_number + 1
-        """
-
-
         if len(new_boxes) != 0: return self.light_classifier.classify(cv_image, new_boxes)
         else: return TrafficLight.UNKNOWN
 
@@ -303,19 +258,14 @@ class TLDetector(object):
         if(self.pose):
             car_position_waypoint = self.get_closest_waypoint(self.pose.pose)
 
-            t2 = time()
-
             # Find the closest traffic light based on stop positions
             index, closest_stop_line_waypoint = self.get_closest_stop_line_waypoint(self.waypoints, car_position_waypoint, stop_line_positions)
-
-            t3 = time()
 
             # Get traffic light state ground truth from simulator provided lights list
             traffic_light_state_truth = TrafficLight.UNKNOWN
             if len(self.lights) > 0 and index >= 0 and index < len(self.lights):
                 # Use matching index from stop_line_positions and hope that they align
                 traffic_light_state_truth = self.lights[index].state
-            t4 = time()
 
             # Get traffic light state from camera image
             traffic_light_state = self.get_light_state(traffic_light_state_truth)
@@ -330,23 +280,6 @@ class TLDetector(object):
             if traffic_light_state_truth == 1: real = "Yellow."
             if traffic_light_state_truth == 2: real = "Green."
             if traffic_light_state_truth == 3: real = "Unknown."
-            #print(text + "  Real: " + real)
-
-            # Fake it
-            #traffic_light_state = traffic_light_state_truth
-
-            # Speaking the truth?
-            #if traffic_light_state != traffic_light_state_truth:
-            #    rospy.loginfo("Warning: Detected traffic light state differs from truth, detected: " + str(traffic_light_state) + " Truth: " + str(traffic_light_state_truth))
-
-            # Log
-            #rospy.loginfo("car_position_waypoint: " + str(car_position_waypoint))
-            #rospy.loginfo("closest_stop_line_waypoint: " + str(closest_stop_line_waypoint))
-            #rospy.loginfo("stop_line_positions:")
-            #rospy.loginfo(stop_line_positions)
-
-        t5 = time()
-        #print(t3-t2)
 
         return closest_stop_line_waypoint, traffic_light_state
 
