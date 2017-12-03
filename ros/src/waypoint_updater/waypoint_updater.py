@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, TwistStamped
 from styx_msgs.msg import Lane, Waypoint
 from std_msgs.msg import Int32
 import math
@@ -20,6 +20,9 @@ as well as to verify your TL classifier.
 '''
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish.
+#LOOKAHEAD_WPS = 25 # Number of waypoints we will publish.
+
+LIGHT_TO_STOP = 3 # number of waypoints between the tl and the line we need to stop
 
 
 class WaypointUpdater(object):
@@ -28,10 +31,15 @@ class WaypointUpdater(object):
 
         # A list of all waypoints
         self.all_waypoints = []
-        
+
+        self.current_velocity = 0
+        self.target_velocity = 0
+        self.stopping_velocities = []
+        self.num_to_stop = 100
+
         # The car's current position
         self.current_pose = None
-        
+
         # The index in all_waypoints of the next red traffic light
         self.traffic_light_waypoint_index = -1
 
@@ -43,6 +51,9 @@ class WaypointUpdater(object):
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
         rospy.Subscriber('/obstacle_waypoint', Lane, self.obstacle_cb)
 
+        # Subscriber for current velocity
+        rospy.Subscriber('/current_velocity', TwistStamped, self.current_vel_cb)
+
         # Publish final_waypoints
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
@@ -53,14 +64,16 @@ class WaypointUpdater(object):
         # Start loop, 10 times a second
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
-            
-            # Publish waypoints
-            if len(self.all_waypoints) > 0 and self.current_pose is not None:
 
+            # wait to move until the traffic light has been discovered
+            #if self.traffic_light_waypoint_index != -1:
+
+            # wait until we have knowledge of the car status and track
+            if len(self.all_waypoints) > 0 and self.current_pose != None:
                 # Get waypoints
                 waypoints = self.all_waypoints
 
-                # Find the nearest waypoint
+                # Find the nearest waypoint to where we currently are
                 position = self.current_pose.position
                 closest_distance = float('inf')
                 closest_waypoint = 0
@@ -70,67 +83,64 @@ class WaypointUpdater(object):
                         closest_distance = this_distance
                         closest_waypoint = i
 
-                # Log
-                #rospy.loginfo("Closest waypoint: " + str(closest_waypoint) + " of " + str(len(waypoints)) + " at distance: " + str(closest_distance) + "\nThe waypoint:\n" + str(waypoints[closest_waypoint]) )
-
-                # Cut waypoints from closest_waypoint to LOOKAHEAD_WPS or end of list
+                # Cut waypoints from closest_waypoint to LOOKAHEAD_WPS or end of list (if end of list loop back around to start)
                 end_waypoint = min(len(waypoints), closest_waypoint + LOOKAHEAD_WPS)
-                waypoints = waypoints[closest_waypoint:end_waypoint]
+                num_points = end_waypoint-closest_waypoint
+                if num_points != LOOKAHEAD_WPS: waypoints = waypoints[closest_waypoint:end_waypoint] + waypoints[:LOOKAHEAD_WPS - num_points]
+                else: waypoints = waypoints[closest_waypoint:end_waypoint]
 
-                # Set velocity to 50 MPH in m/s
-                target_velocity = 22.7
-                
-                # We slow down and stop in 50 waypoints
-                STOPPING_WAYPOINTS = 50
 
-                # Set all waypoints to full speed ahead target_velocity  
-                for waypoint_i, waypoint in enumerate(waypoints):
-                    self.set_waypoint_velocity(waypoints, waypoint_i, target_velocity)
+                #EVERYTHING UP TO PUBLISH MAY BE GARBAGE
 
-                # If we have a red light, stop
-                rospy.loginfo("Waypoint traffic light waypoint index: " + str(self.traffic_light_waypoint_index))
-                if self.traffic_light_waypoint_index != -1:
-                
-                    # Get waypoint index into waypoints of our stop line                
-                    stopping_waypoint = self.traffic_light_waypoint_index - closest_waypoint
+                # get the number of waypoints between where we currently are and where we need to stop
+                wp_num_to_stop = self.traffic_light_waypoint_index - closest_waypoint - LIGHT_TO_STOP
 
-                    # Get waypoint index STOPPING_WAYPOINTS back from stop line where we start slowing down, which could be negative
-                    slowing_down_waypoint = stopping_waypoint - STOPPING_WAYPOINTS
+                # Only change waypoint velocities if we are close enough to slow down and are in front of a red light
+                if wp_num_to_stop <= self.num_to_stop and 0 <= wp_num_to_stop:
+                    #print('here')
+                    # Loop over every waypoint we care about
+                    for i in range(len(waypoints)):
+                        # Does this waypoint have a non zero velocity?
+                        if i < wp_num_to_stop:
+                            ind = self.num_to_stop - wp_num_to_stop + i
+                            target_vel = self.stopping_velocities[ind]
+                            self.set_waypoint_velocity(waypoints, i, target_vel)
+                        else:
+                            self.set_waypoint_velocity(waypoints, i, 0)
+                else:
+                    for i in range(len(waypoints)):
+                        self.set_waypoint_velocity(waypoints, i, self.target_velocity)
 
-                    # Interpolate velocities from slowing_down_waypoint to stopping_waypoint
-                    velocity = target_velocity
-                    for waypoint_i in range(slowing_down_waypoint, stopping_waypoint):
-                        velocity -= target_velocity/STOPPING_WAYPOINTS
-                        if waypoint_i >= 0 and waypoint_i < len(waypoints):
-                            self.set_waypoint_velocity(waypoints, waypoint_i, velocity)
-                            rospy.loginfo("Waypoint velocity: " + str(velocity))
-                        
-                    # Set waypoints after stopping_waypoint also to 0
-                    for waypoint_i in range(stopping_waypoint, len(waypoints)):
-                        if waypoint_i >= 0 and waypoint_i < len(waypoints):
-                            self.set_waypoint_velocity(waypoints, waypoint_i, 0)
+                #print(self.get_waypoint_velocity(waypoints[0]))
 
                 # Publish waypoints
                 lane.header.stamp = rospy.Time.now()
                 lane.waypoints = waypoints
                 self.final_waypoints_pub.publish(lane)
 
-            # Sleep
-            rate.sleep()
+                # Sleep
+                rate.sleep()
+
+    def current_vel_cb(self, current_vel):
+        self.current_vel = current_vel.twist.linear.x
 
     def pose_cb(self, current_pose):
-
         # Save current pose
         self.current_pose = current_pose.pose
 
     def waypoints_cb(self, waypoints):
-
         # Save given waypoints
         self.all_waypoints = waypoints.waypoints
 
+        self.target_velocity = waypoints.waypoints[0].twist.twist.linear.x
+
+
+        vel_diff = self.target_velocity / self.num_to_stop
+        for i in range(self.num_to_stop):
+            self.stopping_velocities.append((self.target_velocity-i*vel_diff))
+
     def traffic_cb(self, msg):
         self.traffic_light_waypoint_index = msg.data
-        pass
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message.

@@ -69,7 +69,7 @@ class DBWNode(object):
 
     def twist_callback(self, twist_cmd):
 
-        rospy.loginfo("twisty " + str(twist_cmd))
+        #rospy.loginfo("twisty " + str(twist_cmd))
 
         # Save
         self.twist_cmd = twist_cmd
@@ -106,20 +106,32 @@ class DBWNode(object):
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
+        #print(str(throttle) + ", " + str(brake))
+
         tcmd = ThrottleCmd()
-        tcmd.enable = True
+        scmd = SteeringCmd()
+        bcmd = BrakeCmd()
+
+        if throttle > 0:
+            tcmd.enable = True
+            bcmd.enable = False
+        else:
+            tcmd.enable = False
+            bcmd.enable = True
+
+
         tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
         tcmd.pedal_cmd = throttle
         self.throttle_pub.publish(tcmd)
 
-        scmd = SteeringCmd()
         scmd.enable = True
         scmd.steering_wheel_angle_cmd = steer
         self.steer_pub.publish(scmd)
 
-        bcmd = BrakeCmd()
-        bcmd.enable = True
-        bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
+
+        #bcmd.enable = True
+        #bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
+        bcmd.pedal_cmd_type = BrakeCmd.CMD_PERCENT
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
 

@@ -9,7 +9,7 @@ import scipy
 
 class TLClassifier(object):
     def __init__(self):
-    
+
         # Counters for writing images
         self.red_image_number = 0
         self.yellow_image_number = 0
@@ -31,9 +31,11 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        
+
+        #PATH = "/home/mikep/Documents/Udacity/Autonomous/CarND-Capstone/"
+
         # Time to run the network?
-        INFERENCE = True
+        INFERENCE = False
         if INFERENCE:
             image = scipy.misc.imresize(image, (image_height, image_width))
             image = img_to_array(image)
@@ -53,20 +55,23 @@ class TLClassifier(object):
         else:
             if traffic_light_state_truth == TrafficLight.RED:
                 self.red_image_number += 1
-                cv2.imwrite("new/red/image_" + str(self.red_image_number) + ".png", image)
+                cv2.imwrite(PATH+"new/red/image_" + str(self.red_image_number) + ".png", image)
+                print('red')
 
             if traffic_light_state_truth == TrafficLight.YELLOW:
                 self.yellow_image_number += 1
-                cv2.imwrite("new/yellow/image_" + str(self.yellow_image_number) + ".png", image)
-            
+                cv2.imwrite(PATH+"new/yellow/image_" + str(self.yellow_image_number) + ".png", image)
+                print('yellow')
+
             if traffic_light_state_truth == TrafficLight.GREEN:
                 self.green_image_number += 1
-                cv2.imwrite("new/green/image_" + str(self.green_image_number) + ".png", image)
-            
+                cv2.imwrite(PATH+"new/green/image_" + str(self.green_image_number) + ".png", image)
+                print('green')
+
             if traffic_light_state_truth == TrafficLight.UNKNOWN:
                 self.unknown_image_number += 1
-                cv2.imwrite("new/none/image_" + str(self.unknown_image_number) + ".png", image)
-        
+                cv2.imwrite(PATH+"new/none/image_" + str(self.unknown_image_number) + ".png", image)
+                print('unknown')
+
         # Save
         return TrafficLight.UNKNOWN
-        
